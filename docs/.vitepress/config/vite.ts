@@ -4,6 +4,7 @@ import UnoCSS from 'unocss/vite'
 import mkcert from 'vite-plugin-mkcert'
 import { glob } from 'tinyglobby'
 import vueJsx from '@vitejs/plugin-vue-jsx'
+import VueI18n from '@intlify/unplugin-vue-i18n/vite'
 import Components from 'unplugin-vue-components/vite'
 import Icons from 'unplugin-icons/vite'
 import IconsResolver from 'unplugin-icons/resolver'
@@ -84,8 +85,24 @@ export const getViteConfig = ({ mode }: { mode: string }) => {
     resolve: {
       alias,
     },
+    ssr: {
+      noExternal: ['vue-i18n'],
+    },
     plugins: [
       vueJsx(),
+
+      {
+        name: 'docs-favicon',
+        configureServer(server) {
+          // Browsers request the default icon before VitePress updates the head.
+          server.middlewares.use('/favicon.ico', (_request, response) => {
+            response.writeHead(302, {
+              Location: '/images/element-plus-logo-small.svg',
+            })
+            response.end()
+          })
+        },
+      } as Plugin,
 
       // https://github.com/antfu/unplugin-vue-components
       Components({
@@ -112,6 +129,12 @@ export const getViteConfig = ({ mode }: { mode: string }) => {
       UnoCSS({
         inspector: false,
       }),
+
+      VueI18n({
+        runtimeOnly: true,
+        compositionOnly: true,
+        include: [path.resolve(__dirname, '../locales/**')],
+      }) as Plugin,
 
       MarkdownTransform() as Plugin,
       ComponentChangelogPlugin() as Plugin,

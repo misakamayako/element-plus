@@ -334,6 +334,53 @@ describe('Select', () => {
     document.body.innerHTML = ''
   })
 
+  test('disables options when the select becomes disabled while open', async () => {
+    wrapper = _mount(
+      `
+      <el-select v-model="value" :disabled="disabled">
+        <el-option label="Apple" value="apple" />
+        <el-option label="Orange" value="orange" />
+      </el-select>
+    `,
+      () => ({ value: 'apple', disabled: false })
+    )
+    await wrapper.find(`.${WRAPPER_CLASS_NAME}`).trigger('click')
+    await nextTick()
+    await wrapper.setData({ disabled: true })
+    await nextTick()
+    const orange = getOptions()[1]
+    expect(orange.getAttribute('aria-disabled')).toBe('true')
+    orange.click()
+    await nextTick()
+    expect(wrapper.vm.value).toBe('apple')
+    await wrapper.setData({ disabled: false })
+    orange.click()
+    await nextTick()
+    expect(wrapper.vm.value).toBe('orange')
+  })
+
+  test('disables options when the containing form becomes disabled', async () => {
+    wrapper = _mount(
+      `
+      <el-form :disabled="disabled">
+        <el-select v-model="value">
+          <el-option label="Apple" value="apple" />
+          <el-option label="Orange" value="orange" />
+        </el-select>
+      </el-form>
+    `,
+      () => ({ value: 'apple', disabled: false })
+    )
+    await wrapper.find(`.${WRAPPER_CLASS_NAME}`).trigger('click')
+    await wrapper.setData({ disabled: true })
+    await nextTick()
+    const orange = getOptions()[1]
+    expect(orange.getAttribute('aria-disabled')).toBe('true')
+    orange.click()
+    await nextTick()
+    expect(wrapper.vm.value).toBe('apple')
+  })
+
   test('create', async () => {
     wrapper = _mount(`<el-select v-model="value"></el-select>`, () => ({
       value: '',
@@ -3354,7 +3401,7 @@ describe('Select', () => {
     expect(input.attributes('aria-controls')).toBe(list.attributes('id'))
     expect(input.attributes('aria-expanded')).toBe('false')
     expect(input.attributes('aria-haspopup')).toBe('listbox')
-    expect(input.attributes('aria-activedescendant')).toBe('')
+    expect(input.attributes('aria-activedescendant')).toBe(undefined)
 
     expect(list.attributes('id')).toBeTruthy()
     expect(list.attributes('role')).toBe('listbox')
